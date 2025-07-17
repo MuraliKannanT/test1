@@ -1,0 +1,107 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start Product SCD Load:
+      type: "start"
+      transitions:
+        unconditional:
+        - "create_stream_str_products"
+      skipped: false
+      parameters:
+        componentName: "Start Product SCD Load"
+    begin_transaction_scd_load:
+      type: "begin"
+      transitions:
+        success:
+        - "test_load_prod_scd 0"
+      skipped: false
+      parameters:
+        componentName: "begin_transaction_scd_load"
+    test_load_prod_scd 0:
+      type: "run-transformation"
+      transitions:
+        success:
+        - "make_all_changes_permanent_dm_products"
+        failure:
+        - "reject_the_changes_dm_products"
+      skipped: false
+      parameters:
+        componentName: "test_load_prod_scd 0"
+        transformationJob: "Samples/test_SubJob_Products_SCD_03"
+        setScalarVariables:
+        setGridVariables:
+    make_all_changes_permanent_dm_products:
+      type: "commit"
+      skipped: false
+      parameters:
+        componentName: "make_all_changes_permanent_dm_products"
+    reject_the_changes_dm_products:
+      type: "rollback"
+      skipped: false
+      parameters:
+        componentName: "reject_the_changes_dm_products"
+    create_stream_str_products:
+      type: "create-stream"
+      transitions:
+        success:
+        - "create_prod_scd_view"
+      skipped: false
+      parameters:
+        componentName: "create_stream_str_products"
+        createReplace: "Create if not exists"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        streamName: "STR_PRODUCTS"
+        tableDatabase: "[Environment Default]"
+        tableSchema: "[Environment Default]"
+        table: "STG_PRODUCTS"
+        appendOnly: "False"
+    create_prod_scd_view:
+      type: "run-transformation"
+      transitions:
+        success:
+        - "begin_transaction_scd_load"
+      skipped: false
+      parameters:
+        componentName: "create_prod_scd_view"
+        transformationJob: "Samples/test_SubJob_Products_SCD_02"
+        setScalarVariables:
+        setGridVariables:
+design:
+  components:
+    Start Product SCD Load:
+      position:
+        x: -592
+        "y": -32
+      tempMetlId: 9615
+    begin_transaction_scd_load:
+      position:
+        x: -144
+        "y": -80
+      tempMetlId: 9620
+    test_load_prod_scd 0:
+      position:
+        x: 0
+        "y": -96
+      tempMetlId: 9632
+    make_all_changes_permanent_dm_products:
+      position:
+        x: 208
+        "y": -96
+      tempMetlId: 9636
+    reject_the_changes_dm_products:
+      position:
+        x: 0
+        "y": 64
+      tempMetlId: 9641
+    create_stream_str_products:
+      position:
+        x: -464
+        "y": -64
+      tempMetlId: 10354
+    create_prod_scd_view:
+      position:
+        x: -288
+        "y": -96
+      tempMetlId: 10458

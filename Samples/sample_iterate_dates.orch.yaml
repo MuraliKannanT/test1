@@ -1,0 +1,222 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Python Script 1"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    Grid Iterator 0:
+      type: "grid-iterator"
+      transitions:
+        success:
+        - "SQS Message 0"
+      iterationTarget: "Python Script 0"
+      skipped: false
+      parameters:
+        componentName: "Grid Iterator 0"
+        gridVariable: "Month_Num_Names"
+        gridIteratorVariableMapping:
+        - - "Month_Numb"
+          - "m_id"
+        - - "Month_Name"
+          - "m_nm"
+        breakOnFailure: "No"
+        concurrency: "Sequential"
+    Python Script 0:
+      type: "python-script"
+      skipped: false
+      parameters:
+        componentName: "Python Script 0"
+        script: "###\n# Variables are directly accessible: \n#   print myvar\n# Updating\
+          \ a variable:\n#   context.updateVariable('myvar', 'new-value')\n# Grid\
+          \ Variables are accessible via the context:\n#   print context.getGridVariable('mygridvar')\n\
+          # Udating a grid variable:\n#   context.updateGridVariable('mygridvar',\
+          \ [['list','of'],['lists','!']])\n# A database cursor can be accessed from\
+          \ the context (Jython only):\n#   cursor = context.cursor()\n#   cursor.execute('select\
+          \ count(*) from mytable')\n#   rowcount = cursor.fetchone()[0]\n###\nprint\
+          \ m_id, m_nm"
+        interpreter: "Python 3"
+    Python Script 1:
+      type: "python-script"
+      transitions:
+        success:
+        - "Grid Iterator 0"
+      skipped: false
+      parameters:
+        componentName: "Python Script 1"
+        script: "###\n# Variables are directly accessible: \n#   print myvar\n# Updating\
+          \ a variable:\n#   context.updateVariable('myvar', 'new-value')\n# Grid\
+          \ Variables are accessible via the context:\n#   print context.getGridVariable('mygridvar')\n\
+          # Udating a grid variable:\n#   context.updateGridVariable('mygridvar',\
+          \ [['list','of'],['lists','!']])\n# A database cursor can be accessed from\
+          \ the context (Jython only):\n#   cursor = context.cursor()\n#   cursor.execute('select\
+          \ count(*) from mytable')\n#   rowcount = cursor.fetchone()[0]\n###\nimport\
+          \ datetime \n\n_dateformat = \"%Y-%m-%d\"\n_startdate = datetime.datetime.strptime(start_date,\
+          \ _dateformat)\n_enddate = datetime.datetime.strptime(end_date, _dateformat)\n\
+          \n_currentdate = _startdate\n_delta = (_enddate - _startdate).days\n_counter\
+          \ = 0\n\n_datelist =[]\n\nwhile _counter < _delta:\n  _currentdate = _startdate\
+          \ + datetime.timedelta( days = _counter)\n  _datelist.append( [_currentdate.strftime(_dateformat)])\n\
+          \  _counter += 1\n\nprint _datelist\ncontext.updateGridVariable('date_list',\
+          \ _datelist)\nprint date_list"
+        interpreter: "Python 3"
+    SQS Message 0:
+      type: "sqs-message"
+      skipped: false
+      parameters:
+        componentName: "SQS Message 0"
+        region: "us-west-2"
+        queueName: "q_mat_success"
+        message: "Date Range Job successfully completed"
+        messageFormat: "Plain"
+  variables:
+    m_id:
+      metadata:
+        type: "NUMBER"
+        description: ""
+        scope: "COPIED"
+        visibility: "PUBLIC"
+      defaultValue: "1"
+    m_nm:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "COPIED"
+        visibility: "PUBLIC"
+      defaultValue: "January"
+    end_date:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "COPIED"
+        visibility: "PUBLIC"
+      defaultValue: "2023-04-15"
+    start_date:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "COPIED"
+        visibility: "PUBLIC"
+      defaultValue: "2023-03-16"
+    current_date:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "COPIED"
+        visibility: "PUBLIC"
+      defaultValue: "2023-01-01"
+    new_grid:
+      metadata:
+        type: "GRID"
+        description: ""
+        scope: "COPIED"
+        visibility: "PUBLIC"
+        columns:
+          Grid_Column:
+            columnType: "TEXT"
+          Variable_Name:
+            columnType: "TEXT"
+      defaultValue:
+      - - "Month_Numb"
+        - "m_id"
+      - - "Month_Name"
+        - "m_nm"
+    date_list:
+      metadata:
+        type: "GRID"
+        description: ""
+        scope: "COPIED"
+        visibility: "PUBLIC"
+        columns:
+          date_value:
+            columnType: "TEXT"
+      defaultValue: []
+    Month_Num_Names:
+      metadata:
+        type: "GRID"
+        description: ""
+        scope: "COPIED"
+        visibility: "PUBLIC"
+        columns:
+          Month_Numb:
+            columnType: "NUMBER"
+          Month_Name:
+            columnType: "TEXT"
+      defaultValue:
+      - - "1"
+        - "January"
+      - - "2"
+        - "February"
+      - - "3"
+        - "March"
+      - - "4"
+        - "April"
+      - - "5"
+        - "May"
+      - - "6"
+        - "June"
+      - - "7"
+        - "July"
+      - - "8"
+        - "August"
+      - - "9"
+        - "September"
+      - - "10"
+        - "October"
+      - - "11"
+        - "November"
+      - - "12"
+        - "December"
+design:
+  components:
+    Start 0:
+      position:
+        x: -296
+        "y": -14
+      tempMetlId: 376
+    Grid Iterator 0:
+      position:
+        x: 16
+        "y": -48
+      tempMetlId: 377
+    Python Script 0:
+      position:
+        x: 16
+        "y": -16
+      tempMetlId: 378
+    Python Script 1:
+      position:
+        x: -112
+        "y": -16
+      tempMetlId: 379
+    SQS Message 0:
+      position:
+        x: 208
+        "y": -80
+      tempMetlId: 3012
+  notes:
+    "375":
+      position:
+        x: -356
+        "y": -276
+      size:
+        height: 204
+        width: 525
+      theme: "yellow"
+      content: |-
+        Job Variables
+        ----------------------------
+        __start_date* and *end_date* denote the date range. Set these with appropriate values.
+
+        *current_date* is used with iterator to hold current value.
+
+        Grid Variables
+        ---------------------------
+        *date_list* - to hold a list of dates generated by the python script.
+
+
+        * Replace component *Python Print dates__ with a child job or another component to take some action with value in variable current_date.

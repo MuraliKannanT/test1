@@ -1,0 +1,87 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Create Table 0"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    Create Table 0:
+      type: "create-table-v2"
+      transitions:
+        success:
+        - "Python Script 0"
+      skipped: false
+      parameters:
+        componentName: "Create Table 0"
+        createMethod: "Create"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        table: ""
+        snowflakeTableType: "Permanent"
+        columns:
+        defaultDdlCollation: ""
+        primaryKeys:
+        clusteringKeys:
+        dataRetentionTimeInDays: ""
+        comment: ""
+    Python Script 0:
+      type: "python-script"
+      transitions:
+        success:
+        - "Send Email 0"
+      skipped: false
+      parameters:
+        componentName: "Python Script 0"
+        script: "###\n# Variables are directly accessible: \n#   print (myvar)\n#\
+          \ Updating a variable:\n#   context.updateVariable('myvar', 'new-value')\n\
+          # Grid Variables are accessible via the context:\n#   print (context.getGridVariable('mygridvar'))\n\
+          # Updating a grid variable:\n#   context.updateGridVariable('mygridvar',\
+          \ [['list','of'],['lists','!']])\n# A database cursor can be accessed from\
+          \ the context (Jython only):\n#   cursor = context.cursor()\n#   cursor.execute('select\
+          \ count(*) from mytable')\n#   rowcount = cursor.fetchone()[0]\n###\n"
+        interpreter: "Python 3"
+        timeout: "360"
+    Send Email 0:
+      type: "send-email-v2"
+      skipped: false
+      parameters:
+        componentName: "Send Email 0"
+        toRecipients:
+        ccRecipients:
+        subject: ""
+        message: ""
+        senderAddress: ""
+        replyAddress: ""
+        smtpUsername: ""
+        smtpPassword: ""
+        smtpHostname: ""
+        smtpPort: "25"
+        enableSslTls: ""
+        enableStartTls: "Yes"
+design:
+  components:
+    Start 0:
+      position:
+        x: -336
+        "y": -48
+      tempMetlId: 4952
+    Create Table 0:
+      position:
+        x: -249
+        "y": -48
+      tempMetlId: 4957
+    Python Script 0:
+      position:
+        x: -154
+        "y": -29
+      tempMetlId: 4960
+    Send Email 0:
+      position:
+        x: -72
+        "y": -38
+      tempMetlId: 4963

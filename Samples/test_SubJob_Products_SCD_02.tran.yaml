@@ -1,0 +1,149 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    create_view_prod_scd:
+      type: "create-view"
+      sources:
+      - "calc_prod_stream"
+      parameters:
+        componentName: "create_view_prod_scd"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        viewName: "VW_PROD_SCD_MAT"
+        secureView: "No"
+        viewType: "Standard"
+    calc_prod_stream:
+      type: "calculator"
+      sources:
+      - "join_prods_groups"
+      parameters:
+        componentName: "calc_prod_stream"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "IFF(\n\"STR_ACTION\"='INSERT' AND \"STR_UPDATE\" = TRUE AND\n  \"DIM_PROD_COST\"\
+            \ != \"PRODCOST\", 'U', \n  \nIFF(\"STR_ACTION\"='INSERT' AND \"STR_UPDATE\"\
+            \ = FALSE ,'I', \n\n    IFF(\"STR_ACTION\"='DELETE' AND \"STR_UPDATE\"\
+            \ = FALSE ,'D',\n        \n        IFF(\"STR_ACTION\"='INSERT' AND \"\
+            STR_UPDATE\" = TRUE AND\n  \"DIM_PROD_COST\" = \"PRODCOST\", 'N',''))))\n\
+            \    \n\n"
+          - "ACTION"
+        - - "'9999-12-31 00:00:00.000'::timestamp_ltz"
+          - "EXPIRYTIME"
+        - - "current_timestamp()"
+          - "CURTIME"
+        - - "FALSE"
+          - "CURFLAG"
+    STG_PRODGROUPS:
+      type: "table-input"
+      parameters:
+        componentName: "STG_PRODGROUPS"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "STG_PRODGROUPS"
+        columnNames:
+        - "GROUP_ID"
+        - "GROUPNAME"
+        - "DIVISION"
+        timeOffset: ""
+    join_prods_groups:
+      type: "join"
+      sources:
+      - "STG_PRODGROUPS"
+      - "DM_PRODUCTS_SCD"
+      - "stream_products"
+      parameters:
+        componentName: "join_prods_groups"
+        mainTable: "stream_products"
+        mainTableAlias: "main"
+        joins:
+        - - "STG_PRODGROUPS"
+          - "grp"
+          - "Inner"
+        - - "DM_PRODUCTS_SCD"
+          - "dim"
+          - "Left"
+        joinExpressions:
+        - - "\"main\".\"GROUP_ID\"=\"grp\".\"GROUP_ID\""
+          - "main_Inner_grp"
+        - - "\"main\".\"PRODUCT_ID\"=\"dim\".\"PRODUCT_ID\""
+          - "main_Left_dim"
+        columnMappings:
+        - - "main.PRODUCT_ID"
+          - "PRODUCT_ID"
+        - - "main.GROUP_ID"
+          - "GROUP_ID"
+        - - "main.PRODUCT"
+          - "PRODUCT_DESC"
+        - - "main.PRODCOST"
+          - "PRODCOST"
+        - - "main.UPDATE_TS"
+          - "UPDATE_TS"
+        - - "grp.GROUPNAME"
+          - "GROUP_DESC"
+        - - "grp.DIVISION"
+          - "DIVISION"
+        - - "dim.PRODUCT_COST"
+          - "DIM_PROD_COST"
+        - - "main.METADATA$ACTION"
+          - "STR_ACTION"
+        - - "main.METADATA$ISUPDATE"
+          - "STR_UPDATE"
+    stream_products:
+      type: "stream-input-sf"
+      parameters:
+        componentName: "stream_products"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetStream: "STR_PRODUCTS"
+        columnNames:
+        - "PRODUCT_ID"
+        - "GROUP_ID"
+        - "PRODUCT"
+        - "PRODCOST"
+        - "UPDATE_TS"
+        - "METADATA$ACTION"
+        - "METADATA$ISUPDATE"
+    DM_PRODUCTS_SCD:
+      type: "table-input"
+      parameters:
+        componentName: "DM_PRODUCTS_SCD"
+        database: "[Environment Default]"
+        schema: "DW"
+        targetTable: "DM_PRODUCTS_SCD"
+        columnNames:
+        - "PRODUCT_ID"
+        - "PRODUCT_COST"
+        timeOffset: ""
+design:
+  components:
+    create_view_prod_scd:
+      position:
+        x: 496
+        "y": -16
+      tempMetlId: 9213
+    calc_prod_stream:
+      position:
+        x: 368
+        "y": -16
+      tempMetlId: 9281
+    STG_PRODGROUPS:
+      position:
+        x: -112
+        "y": -16
+      tempMetlId: 10203
+    join_prods_groups:
+      position:
+        x: 176
+        "y": -16
+      tempMetlId: 10211
+    stream_products:
+      position:
+        x: -16
+        "y": 144
+      tempMetlId: 10414
+    DM_PRODUCTS_SCD:
+      position:
+        x: -96
+        "y": 64
+      tempMetlId: 12843

@@ -1,0 +1,417 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    Filter 0:
+      type: "filter"
+      sources:
+      - "Fixed Flow 0"
+      parameters:
+        componentName: "Filter 0"
+        filterConditions:
+        - - "CUSTOMER_ID"
+          - "Not"
+          - "Equal to"
+          - "99999"
+        - - "CUSTOMER_ID"
+          - "Not"
+          - "Equal to"
+          - "0"
+        - - "CUSTOMER_ID"
+          - "Not"
+          - "Null"
+          - "Null"
+        combineCondition: "AND"
+    Calculator 0:
+      type: "calculator"
+      sources:
+      - "Filter 0"
+      parameters:
+        componentName: "Calculator 0"
+        includeInputColumns: "Yes"
+        calculations:
+        - - |
+            "CUSTOMER_FIRSTNAME" || ' ' || "CUSTOMER_LASTNAME"
+          - "CUST_NAME"
+        - - "IFF (\"CUSTOMER_GENDER\"='M',\n\t\n    'MALE',\n\n\tIFF (\"CUSTOMER_GENDER\"\
+            ='F',\n\t\t'FEMALE',\n\t\t 'N/A') )\n         \n"
+          - "CUST_GENDER"
+        - - |-
+            '(' || SUBSTR("CUSTOMER_PHONE", 1,3) || ') ' ||
+
+            SUBSTR("CUSTOMER_PHONE", 4,3) || '-' ||
+
+            SUBSTR("CUSTOMER_PHONE", 7)
+          - "CUST_PHONE"
+        - - "MKMOTORS.DW.SEQ_CUST.NEXTVAL"
+          - "CUST_KEY"
+        - - "MONTH(DATEADD(MONTH,-(CEIL(\"CUSTOMER_AGE\"*12)+ABS(MOD(\"CUSTOMER_ID\"\
+            ,7))),CURRENT_DATE()))"
+          - "CUST_DOB"
+    Map Values 0:
+      type: "map-values"
+      sources:
+      - "Calculator 0"
+      parameters:
+        componentName: "Map Values 0"
+        valueMap:
+        - - "CUSTOMER_AGE"
+          - "Is"
+          - "Less than or equal to"
+          - "21"
+          - "Boys"
+        - - "CUSTOMER_AGE"
+          - "Is"
+          - "Less than or equal to"
+          - "40"
+          - "Youngsters"
+        - - "CUSTOMER_AGE"
+          - "Is"
+          - "Less than or equal to"
+          - "60"
+          - "MiddleAged"
+        - - "CUSTOMER_AGE"
+          - "Is"
+          - "Greater than or equal to"
+          - "80"
+          - "Super Seniors"
+        columnName: "Age_Group"
+        other: "Seniors"
+    Fixed Flow 0:
+      type: "fixed-flow"
+      parameters:
+        componentName: "Fixed Flow 0"
+        columns:
+        - - "DEALERSHIP_ID"
+          - "NUMBER"
+          - "8"
+          - "0"
+        - - "CUSTOMER_REGION"
+          - "VARCHAR"
+          - "20"
+          - ""
+        - - "CUSTOMER_ID"
+          - "NUMBER"
+          - "8"
+          - "0"
+        - - "CUSTOMER_FIRSTNAME"
+          - "VARCHAR"
+          - "24"
+          - ""
+        - - "CUSTOMER_LASTNAME"
+          - "VARCHAR"
+          - "24"
+          - ""
+        - - "CUSTOMER_ADDRESS"
+          - "VARCHAR"
+          - "50"
+          - ""
+        - - "CUSTOMER_CITY"
+          - "VARCHAR"
+          - "20"
+          - ""
+        - - "CUSTOMER_STATE"
+          - "VARCHAR"
+          - "20"
+          - ""
+        - - "CUSTOMER_ZIPCODE"
+          - "NUMBER"
+          - "6"
+          - "0"
+        - - "CUSTOMER_COUNTRY"
+          - "VARCHAR"
+          - "20"
+          - ""
+        - - "CUSTOMER_PHONE"
+          - "VARCHAR"
+          - "10"
+          - ""
+        - - "CUSTOMER_GENDER"
+          - "VARCHAR"
+          - "1"
+          - ""
+        - - "CUSTOMER_INCOME"
+          - "NUMBER"
+          - "9"
+          - "2"
+        - - "CUSTOMER_EMAIL"
+          - "VARCHAR"
+          - "40"
+          - ""
+        - - "CUSTOMER_AGE"
+          - "NUMBER"
+          - "3"
+          - "0"
+        - - "LAST_UPDATED"
+          - "TIMESTAMP"
+          - ""
+          - ""
+        values:
+          fromGrid:
+            variable: "grid_cust_values"
+            columns:
+            - "DEALERSHIP_ID"
+            - "CUSTOMER_REGION"
+            - "CUSTOMER_ID"
+            - "CUSTOMER_FIRSTNAME"
+            - "CUSTOMER_LASTNAME"
+            - "CUSTOMER_ADDRESS"
+            - "CUSTOMER_CITY"
+            - "CUSTOMER_STATE"
+            - "CUSTOMER_ZIPCODE"
+            - "CUSTOMER_COUNTRY"
+            - "CUSTOMER_PHONE"
+            - "CUSTOMER_GENDER"
+            - "CUSTOMER_INCOME"
+            - "CUSTOMER_EMAIL"
+            - "CUSTOMER_AGE"
+            - "LAST_UPDATED"
+    DM_CUSTOMERS:
+      type: "table-output"
+      sources:
+      - "Map Values 0"
+      parameters:
+        componentName: "DM_CUSTOMERS"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "DW"
+        targetTable: "DM_CUSTOMERS"
+        fixDataTypeMismatches: "No"
+        columnMapping:
+        - - "CUST_KEY"
+          - "CUST_KEY"
+        - - "CUSTOMER_ID"
+          - "CUST_ID"
+        - - "CUST_NAME"
+          - "CUST_NAME"
+        - - "CUSTOMER_ADDRESS"
+          - "CUST_ADDRESS"
+        - - "CUSTOMER_CITY"
+          - "CUST_CITY"
+        - - "CUSTOMER_STATE"
+          - "CUST_STATE"
+        - - "CUSTOMER_ZIPCODE"
+          - "CUST_ZIP_CODE"
+        - - "CUSTOMER_COUNTRY"
+          - "CUST_COUNTRY"
+        - - "CUSTOMER_PHONE"
+          - "CUST_PHONE_NMBR"
+        - - "CUSTOMER_EMAIL"
+          - "CUST_GENDER"
+        - - "Age_Group"
+          - "CUST_AGE_GROUP"
+        - - "CUSTOMER_INCOME"
+          - "CUST_INCOME"
+        - - "CUSTOMER_EMAIL"
+          - "CUST_EMAIL"
+        - - "CUSTOMER_AGE"
+          - "CUST_AGE"
+        orderBy:
+        outputMode: "Append"
+      postProcessing:
+        updateScalarVariables:
+        - - "env_cloud_rec"
+          - "${sysvar.thisComponent.rowCount}"
+        - - "job_error_dmcust"
+          - "${sysvar.thisComponent.message}"
+        - - "env_state"
+          - "${sysvar.thisComponent.name}"
+  variables:
+    job_error_dmcust:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: ""
+    GRID_NEW:
+      metadata:
+        type: "GRID"
+        description: ""
+        scope: "COPIED"
+        visibility: "PUBLIC"
+        columns:
+          TEST_ID:
+            columnType: "NUMBER"
+          TEST_NAME:
+            columnType: "TEXT"
+      defaultValue: []
+    grid_cust_values:
+      metadata:
+        type: "GRID"
+        description: ""
+        scope: "SHARED"
+        visibility: "PUBLIC"
+        columns:
+          DEALERSHIP_ID:
+            columnType: "NUMBER"
+          CUSTOMER_REGION:
+            columnType: "TEXT"
+          CUSTOMER_ID:
+            columnType: "NUMBER"
+          CUSTOMER_FIRSTNAME:
+            columnType: "TEXT"
+          CUSTOMER_LASTNAME:
+            columnType: "TEXT"
+          CUSTOMER_ADDRESS:
+            columnType: "TEXT"
+          CUSTOMER_CITY:
+            columnType: "TEXT"
+          CUSTOMER_STATE:
+            columnType: "TEXT"
+          CUSTOMER_ZIPCODE:
+            columnType: "NUMBER"
+          CUSTOMER_COUNTRY:
+            columnType: "TEXT"
+          CUSTOMER_PHONE:
+            columnType: "TEXT"
+          CUSTOMER_GENDER:
+            columnType: "TEXT"
+          CUSTOMER_INCOME:
+            columnType: "NUMBER"
+          CUSTOMER_EMAIL:
+            columnType: "TEXT"
+          CUSTOMER_AGE:
+            columnType: "NUMBER"
+          LAST_UPDATED:
+            columnType: "TEXT"
+      defaultValue:
+      - - "0"
+        - "a"
+        - "0"
+        - "a"
+        - "a"
+        - "a"
+        - "s"
+        - "a"
+        - "0"
+        - "a"
+        - "1"
+        - "m"
+        - "5.2"
+        - "m"
+        - "0"
+        - "2023-04-20"
+      - - "1"
+        - "b"
+        - "1"
+        - "b"
+        - "b"
+        - "b"
+        - "b"
+        - "b"
+        - "1"
+        - "b"
+        - "2"
+        - "f"
+        - "2.3"
+        - "h"
+        - "1"
+        - "2023-04-21"
+    grid_cust_structure:
+      metadata:
+        type: "GRID"
+        description: ""
+        scope: "COPIED"
+        visibility: "PRIVATE"
+        columns:
+          colname:
+            columnType: "TEXT"
+          datatype:
+            columnType: "TEXT"
+          size:
+            columnType: "NUMBER"
+          precision:
+            columnType: "NUMBER"
+      defaultValue:
+      - - "DEALERSHIP_ID"
+        - "NUMBER"
+        - "8"
+        - "0"
+      - - "CUSTOMER_REGION"
+        - "VARCHAR"
+        - "20"
+        - "0"
+      - - "CUSTOMER_ID"
+        - "NUMBER"
+        - "8"
+        - "0"
+      - - "CUSTOMER_FIRSTNAME"
+        - "VARCHAR"
+        - "24"
+        - "0"
+      - - "CUSTOMER_LASTNAME"
+        - "VARCHAR"
+        - "24"
+        - "0"
+      - - "CUSTOMER_ADDRESS"
+        - "VARCHAR"
+        - "50"
+        - "0"
+      - - "CUSTOMER_CITY"
+        - "VARCHAR"
+        - "20"
+        - "0"
+      - - "CUSTOMER_STATE"
+        - "VARCHAR"
+        - "20"
+        - "0"
+      - - "CUSTOMER_ZIPCODE"
+        - "NUMBER"
+        - "6"
+        - "0"
+      - - "CUSTOMER_COUNTRY"
+        - "VARCHAR"
+        - "20"
+        - "0"
+      - - "CUSTOMER_PHONE"
+        - "VARCHAR"
+        - "10"
+        - "0"
+      - - "CUSTOMER_GENDER"
+        - "VARCHAR"
+        - "1"
+        - "0"
+      - - "CUSTOMER_INCOME"
+        - "NUMBER"
+        - "9"
+        - "2"
+      - - "CUSTOMER_EMAIL"
+        - "VARCHAR"
+        - "40"
+        - "0"
+      - - "CUSTOMER_AGE"
+        - "NUMBER"
+        - "3"
+        - "0"
+      - - "LAST_UPDATED"
+        - "TIMESTAMP"
+        - "0"
+        - "0"
+design:
+  components:
+    Filter 0:
+      position:
+        x: -112
+        "y": -80
+      tempMetlId: 8255
+    Calculator 0:
+      position:
+        x: 32
+        "y": -80
+      tempMetlId: 8256
+    Map Values 0:
+      position:
+        x: 208
+        "y": -80
+      tempMetlId: 8257
+    Fixed Flow 0:
+      position:
+        x: -304
+        "y": -80
+      tempMetlId: 8258
+    DM_CUSTOMERS:
+      position:
+        x: 319
+        "y": -88
+      tempMetlId: 8259
