@@ -1,0 +1,118 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Python Script 0"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    Loop Iterator 0:
+      type: "loop-iterator"
+      iterationTarget: "cust_load_grid"
+      skipped: false
+      parameters:
+        componentName: "Loop Iterator 0"
+        concurrency: "Sequential"
+        variableToIterate: "env_cust_rec_count"
+        startingValue: "1"
+        incrementValue: "1"
+        endValue: "${env_cust_iter}"
+        breakOnFailure: "No"
+    Python Script 0:
+      type: "python-script"
+      transitions:
+        success:
+        - "Loop Iterator 0"
+      skipped: false
+      parameters:
+        componentName: "Python Script 0"
+        script: "###\n# Variables are directly accessible: \n#   print (myvar)\n#\
+          \ Updating a variable:\n#   context.updateVariable('myvar', 'new-value')\n\
+          # Grid Variables are accessible via the context:\n#   print (context.getGridVariable('mygridvar'))\n\
+          # Updating a grid variable:\n#   context.updateGridVariable('mygridvar',\
+          \ [['list','of'],['lists','!']])\n# A database cursor can be accessed from\
+          \ the context (Jython only):\n#   cursor = context.cursor()\n#   cursor.execute('select\
+          \ count(*) from mytable')\n#   rowcount = cursor.fetchone()[0]\n###\ncursor\
+          \ = context.cursor()\n# cursor.execute('select count(*) from mkmotors.stg.stg_customers')\n\
+          # totcnt = cursor.fetchone()[0]\ntotcnt = 200\ncursor.execute('select count(*)\
+          \ from mkmotors.dw.dm_customers')\ncontext.updateVariable('env_totcustdm',cursor.fetchone()[0]+1)\n\
+          itercount = int(totcnt/50)\nremaind = totcnt%50\nif remaind != 0:\n\titercount\
+          \ = itercount + 1\ncontext.updateVariable('env_cust_iter',itercount)\ncontext.updateVariable('env_totcuststg',totcnt+env_totcustdm)\n\
+          print \"Iterations: \" + str(itercount)\nprint \"Total Recs: \" + str(totcnt)\
+          \ \nprint \"Start  Key: \" + str(env_totcustdm)\n\n"
+        interpreter: "Python 3"
+    cust_load_grid:
+      type: "run-orchestration"
+      skipped: false
+      parameters:
+        componentName: "cust_load_grid"
+        orchestrationJob: "Samples/sample_dm_customer_load_grid"
+        setScalarVariables:
+        setGridVariables:
+  variables:
+    grid_input_cust:
+      metadata:
+        type: "GRID"
+        description: ""
+        scope: "SHARED"
+        visibility: "PUBLIC"
+        columns:
+          DEALERSHIP_ID:
+            columnType: "NUMBER"
+          CUSTOMER_REGION:
+            columnType: "TEXT"
+          CUSTOMER_ID:
+            columnType: "NUMBER"
+          CUSTOMER_FIRSTNAME:
+            columnType: "TEXT"
+          CUSTOMER_LASTNAME:
+            columnType: "TEXT"
+          CUSTOMER_ADDRESS:
+            columnType: "TEXT"
+          CUSTOMER_CITY:
+            columnType: "TEXT"
+          CUSTOMER_STATE:
+            columnType: "TEXT"
+          CUSTOMER_ZIPCODE:
+            columnType: "NUMBER"
+          CUSTOMER_COUNTRY:
+            columnType: "TEXT"
+          CUSTOMER_PHONE:
+            columnType: "TEXT"
+          CUSTOMER_GENDER:
+            columnType: "TEXT"
+          CUSTOMER_INCOME:
+            columnType: "NUMBER"
+          CUSTOMER_EMAIL:
+            columnType: "TEXT"
+          CUSTOMER_AGE:
+            columnType: "NUMBER"
+          LAST_UPDATED:
+            columnType: "TEXT"
+      defaultValue: []
+design:
+  components:
+    Start 0:
+      position:
+        x: -752
+        "y": -128
+      tempMetlId: 3671
+    Loop Iterator 0:
+      position:
+        x: -400
+        "y": -128
+      tempMetlId: 3675
+    Python Script 0:
+      position:
+        x: -608
+        "y": -128
+      tempMetlId: 3676
+    cust_load_grid:
+      position:
+        x: -400
+        "y": -128
+      tempMetlId: 5735

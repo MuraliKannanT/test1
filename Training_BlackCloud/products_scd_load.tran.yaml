@@ -1,0 +1,210 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    VW_PROD_SCD_MAT:
+      type: "table-input"
+      parameters:
+        componentName: "VW_PROD_SCD_MAT"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "VW_PROD_SCD_MAT"
+        columnNames:
+        - "PRODUCT_ID"
+        - "PRODUCT"
+        - "PRODCOST"
+        - "UPDATE_TS"
+        - "ACTION"
+        - "EXPIRYTIME"
+        - "CURTIME"
+        - "CURFLAG"
+        - "GROUPNAME"
+        - "DIVISION"
+        - "GROUP_ID"
+        timeOffset: ""
+    scd_updates:
+      type: "table-update"
+      sources:
+      - "filter_updates"
+      parameters:
+        componentName: "scd_updates"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "DW"
+        targetTable: "DM_PRODUCTS_SCD"
+        targetAlias: "target"
+        sourceAlias: "input"
+        joinExpression:
+        - - "\"target\".\"PRODUCT_ID\"=\"input\".\"PRODUCT_ID\""
+          - "Join"
+        whenMatched:
+        - - |+
+            "target"."END_TS" = "input"."EXPIRYTIME" and "input"."ACTION" = 'U'
+
+
+
+
+          - "Update"
+        updateMapping:
+        - - "UPDATE_TS"
+          - "END_TS"
+        - - "CURFLAG"
+          - "CURRENT_FLAG"
+        includeNotMatched: "No"
+    Replicate 0:
+      type: "unknown-transformation"
+      sources:
+      - "filter_action_blank"
+      parameters:
+        "1": "Replicate 0"
+    scd_deletes:
+      type: "table-update"
+      sources:
+      - "filter_deletions"
+      parameters:
+        componentName: "scd_deletes"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "DW"
+        targetTable: "DM_PRODUCTS_SCD"
+        targetAlias: "target"
+        sourceAlias: "input"
+        joinExpression:
+        - - "\"target\".\"PRODUCT_ID\"=\"input\".\"PRODUCT_ID\""
+          - "Join"
+        whenMatched:
+        - - "\"input\".\"ACTION\"='D'"
+          - "Update"
+        updateMapping:
+        - - "CURTIME"
+          - "END_TS"
+        - - "CURFLAG"
+          - "CURRENT_FLAG"
+        includeNotMatched: "No"
+    scd_products_inserts:
+      type: "table-output"
+      sources:
+      - "filter_new_records"
+      parameters:
+        componentName: "scd_products_inserts"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "DW"
+        targetTable: "DM_PRODUCTS_SCD"
+        fixDataTypeMismatches: "No"
+        columnMapping:
+        - - "PRODUCT_ID"
+          - "PRODUCT_ID"
+        - - "GROUP_ID"
+          - "GROUP_ID"
+        - - "PRODUCT"
+          - "PRODUCT_DESC"
+        - - "PRODCOST"
+          - "PRODUCT_COST"
+        - - "UPDATE_TS"
+          - "START_TS"
+        - - "GROUPNAME"
+          - "GROUP_DESC"
+        - - "DIVISION"
+          - "DIVISION_DESC"
+        orderBy:
+        outputMode: "Append"
+    filter_new_records:
+      type: "filter"
+      sources:
+      - "Replicate 0"
+      parameters:
+        componentName: "filter_new_records"
+        filterConditions:
+        - - "ACTION"
+          - "Is"
+          - "Equal to"
+          - "I"
+        - - "ACTION"
+          - "Is"
+          - "Equal to"
+          - "U"
+        combineCondition: "OR"
+    filter_deletions:
+      type: "filter"
+      sources:
+      - "Replicate 0"
+      parameters:
+        componentName: "filter_deletions"
+        filterConditions:
+        - - "ACTION"
+          - "Is"
+          - "Equal to"
+          - "D"
+        combineCondition: "OR"
+    filter_updates:
+      type: "filter"
+      sources:
+      - "Replicate 0"
+      parameters:
+        componentName: "filter_updates"
+        filterConditions:
+        - - "ACTION"
+          - "Is"
+          - "Equal to"
+          - "U"
+        combineCondition: "AND"
+    filter_action_blank:
+      type: "filter"
+      sources:
+      - "VW_PROD_SCD_MAT"
+      parameters:
+        componentName: "filter_action_blank"
+        filterConditions:
+        - - "ACTION"
+          - "Not"
+          - "Blank"
+          -
+        combineCondition: "AND"
+design:
+  components:
+    VW_PROD_SCD_MAT:
+      position:
+        x: -112
+        "y": 0
+      tempMetlId: 11060
+    scd_updates:
+      position:
+        x: 528
+        "y": -96
+      tempMetlId: 11061
+    Replicate 0:
+      position:
+        x: 208
+        "y": 0
+      tempMetlId: 11062
+    scd_deletes:
+      position:
+        x: 528
+        "y": 0
+      tempMetlId: 11063
+    scd_products_inserts:
+      position:
+        x: 528
+        "y": 96
+      tempMetlId: 11064
+    filter_new_records:
+      position:
+        x: 384
+        "y": 96
+      tempMetlId: 11065
+    filter_deletions:
+      position:
+        x: 384
+        "y": 0
+      tempMetlId: 11066
+    filter_updates:
+      position:
+        x: 384
+        "y": -96
+      tempMetlId: 11067
+    filter_action_blank:
+      position:
+        x: 64
+        "y": 0
+      tempMetlId: 11068

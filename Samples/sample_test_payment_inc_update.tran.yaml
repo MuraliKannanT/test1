@@ -1,0 +1,52 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    SRC_PAYMENT_TYPE:
+      type: "table-input"
+      parameters:
+        componentName: "SRC_PAYMENT_TYPE"
+        database: "[Environment Default]"
+        schema: "SOURCE"
+        targetTable: "SRC_PAYMENT_TYPE"
+        columnNames:
+        - "PAYMENT_ID"
+        - "PAYMENT_TYPE_DESC"
+        - "CREATED_AT"
+        timeOffset: ""
+    STG_PAYMENT_TYPE:
+      type: "table-update"
+      sources:
+      - "SRC_PAYMENT_TYPE"
+      parameters:
+        componentName: "STG_PAYMENT_TYPE"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "SOURCE"
+        targetTable: "SRC_PAYMENT_TYPE"
+        targetAlias: "target"
+        sourceAlias: "input"
+        joinExpression:
+        - - "\"target\".\"PAYMENT_ID\"\"input\".\"PAYMENT_ID\""
+          - "Join"
+        whenMatched:
+        - - "\"target\".\"PAYMENT_TYPE_NAME\"=\"input\".\"PAYMENT_TYPE_DESC\""
+          - "Update"
+        updateMapping:
+        - - "PAYMENT_TYPE_DESC"
+          - "PAYMENT_TYPE_NAME"
+        - - "CREATED_AT"
+          - "UPDATED_TS"
+        includeNotMatched: "No"
+design:
+  components:
+    SRC_PAYMENT_TYPE:
+      position:
+        x: 193
+        "y": 98
+      tempMetlId: 8310
+    STG_PAYMENT_TYPE:
+      position:
+        x: 321
+        "y": 97
+      tempMetlId: 8748

@@ -1,0 +1,239 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    VW_PROD_SCD_MAT:
+      type: "table-input"
+      parameters:
+        componentName: "VW_PROD_SCD_MAT"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "VW_PROD_SCD_MAT"
+        columnNames:
+        - "PRODUCT_ID"
+        - "GROUP_ID"
+        - "PRODUCT_DESC"
+        - "PRODCOST"
+        - "UPDATE_TS"
+        - "ACTION"
+        - "EXPIRYTIME"
+        - "CURTIME"
+        - "CURFLAG"
+        - "GROUP_DESC"
+        - "DIVISION"
+        timeOffset: ""
+    scd_updates:
+      type: "table-update"
+      sources:
+      - "filter_updates"
+      parameters:
+        componentName: "scd_updates"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "DW"
+        targetTable: "DM_PRODUCTS_SCD"
+        targetAlias: "target"
+        sourceAlias: "input"
+        joinExpression:
+        - - "\"target\".\"PRODUCT_ID\"=\"input\".\"PRODUCT_ID\""
+          - "Join"
+        whenMatched:
+        - - |+
+            "target"."END_TS" = "input"."EXPIRYTIME" and "input"."ACTION" = 'U'
+
+
+
+
+          - "Update"
+        updateMapping:
+        - - "UPDATE_TS"
+          - "END_TS"
+        - - "CURFLAG"
+          - "CURRENT_FLAG"
+        includeNotMatched: "No"
+    Replicate 0:
+      type: "unknown-transformation"
+      sources:
+      - "VW_PROD_SCD_MAT"
+      parameters:
+        "1": "Replicate 0"
+    scd_deletes:
+      type: "table-update"
+      sources:
+      - "filter_deletions"
+      parameters:
+        componentName: "scd_deletes"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "DW"
+        targetTable: "DM_PRODUCTS_SCD"
+        targetAlias: "target"
+        sourceAlias: "input"
+        joinExpression:
+        - - "\"target\".\"PRODUCT_ID\"=\"input\".\"PRODUCT_ID\""
+          - "Join"
+        whenMatched:
+        - - "\"input\".\"ACTION\"='D'"
+          - "Update"
+        updateMapping:
+        - - "CURTIME"
+          - "END_TS"
+        - - "CURFLAG"
+          - "CURRENT_FLAG"
+        includeNotMatched: "No"
+    scd_products_inserts:
+      type: "table-output"
+      sources:
+      - "filter_new_records"
+      parameters:
+        componentName: "scd_products_inserts"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "DW"
+        targetTable: "DM_PRODUCTS_SCD"
+        fixDataTypeMismatches: "No"
+        columnMapping:
+        - - "PRODUCT_ID"
+          - "PRODUCT_ID"
+        - - "GROUP_ID"
+          - "GROUP_ID"
+        - - "PRODUCT_DESC"
+          - "PRODUCT_DESC"
+        - - "PRODCOST"
+          - "PRODUCT_COST"
+        - - "UPDATE_TS"
+          - "START_TS"
+        - - "GROUP_DESC"
+          - "GROUP_DESC"
+        - - "DIVISION"
+          - "DIVISION_DESC"
+        orderBy:
+        outputMode: "Append"
+    filter_new_records:
+      type: "filter"
+      sources:
+      - "Replicate 0"
+      parameters:
+        componentName: "filter_new_records"
+        filterConditions:
+        - - "ACTION"
+          - "Is"
+          - "Equal to"
+          - "I"
+        - - "ACTION"
+          - "Is"
+          - "Equal to"
+          - "U"
+        combineCondition: "OR"
+    filter_deletions:
+      type: "filter"
+      sources:
+      - "Replicate 0"
+      parameters:
+        componentName: "filter_deletions"
+        filterConditions:
+        - - "ACTION"
+          - "Is"
+          - "Equal to"
+          - "D"
+        combineCondition: "OR"
+    filter_updates:
+      type: "filter"
+      sources:
+      - "Replicate 0"
+      parameters:
+        componentName: "filter_updates"
+        filterConditions:
+        - - "ACTION"
+          - "Is"
+          - "Equal to"
+          - "U"
+        combineCondition: "AND"
+    Filter 0:
+      type: "filter"
+      sources:
+      - "Replicate 0"
+      parameters:
+        componentName: "Filter 0"
+        filterConditions:
+        - - "ACTION"
+          - "Is"
+          - "Equal to"
+          - "N"
+        combineCondition: "AND"
+    scd_update_changes:
+      type: "table-update"
+      sources:
+      - "Filter 0"
+      parameters:
+        componentName: "scd_update_changes"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "DW"
+        targetTable: "DM_PRODUCTS_SCD"
+        targetAlias: "target"
+        sourceAlias: "input"
+        joinExpression:
+        - - "\"target\".\"PRODUCT_ID\"=\"input\".\"PRODUCT_ID\""
+          - "Join"
+        whenMatched:
+        - - "\"input\".\"ACTION\"='N'"
+          - "Update"
+        updateMapping:
+        - - "CURTIME"
+          - "END_TS"
+        - - "PRODUCT_DESC"
+          - "PRODUCT_DESC"
+        includeNotMatched: "No"
+design:
+  components:
+    VW_PROD_SCD_MAT:
+      position:
+        x: -208
+        "y": -64
+      tempMetlId: 9360
+    scd_updates:
+      position:
+        x: 528
+        "y": -96
+      tempMetlId: 9382
+    Replicate 0:
+      position:
+        x: 64
+        "y": -80
+      tempMetlId: 9488
+    scd_deletes:
+      position:
+        x: 528
+        "y": 0
+      tempMetlId: 9528
+    scd_products_inserts:
+      position:
+        x: 528
+        "y": 96
+      tempMetlId: 9563
+    filter_new_records:
+      position:
+        x: 384
+        "y": 96
+      tempMetlId: 9565
+    filter_deletions:
+      position:
+        x: 384
+        "y": 0
+      tempMetlId: 9789
+    filter_updates:
+      position:
+        x: 384
+        "y": -96
+      tempMetlId: 9824
+    Filter 0:
+      position:
+        x: 13
+        "y": 66
+      tempMetlId: 13004
+    scd_update_changes:
+      position:
+        x: 144
+        "y": 128
+      tempMetlId: 13009

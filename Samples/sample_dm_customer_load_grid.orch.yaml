@@ -1,0 +1,266 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Query Result To Grid 0"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    Query Result To Grid 0:
+      type: "query-to-grid"
+      transitions:
+        success:
+        - "If 0"
+      skipped: false
+      parameters:
+        componentName: "Query Result To Grid 0"
+        mode: "Basic"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        table: "STG_CUSTOMERS"
+        tableColumns:
+        - "DEALERSHIP_ID"
+        - "CUSTOMER_REGION"
+        - "CUSTOMER_ID"
+        - "CUSTOMER_FIRSTNAME"
+        - "CUSTOMER_LASTNAME"
+        - "CUSTOMER_ADDRESS"
+        - "CUSTOMER_CITY"
+        - "CUSTOMER_STATE"
+        - "CUSTOMER_ZIPCODE"
+        - "CUSTOMER_COUNTRY"
+        - "CUSTOMER_PHONE"
+        - "CUSTOMER_GENDER"
+        - "CUSTOMER_INCOME"
+        - "CUSTOMER_EMAIL"
+        - "CUSTOMER_AGE"
+        - "LAST_UPDATED"
+        orderBy:
+        sort: "Ascending"
+        limit: "100"
+        gridVariable: "grid_input_cust"
+        gridVariableMapping:
+        - - "DEALERSHIP_ID"
+          - "DEALERSHIP_ID"
+        - - "CUSTOMER_REGION"
+          - "CUSTOMER_REGION"
+        - - "CUSTOMER_ID"
+          - "CUSTOMER_ID"
+        - - "CUSTOMER_FIRSTNAME"
+          - "CUSTOMER_FIRSTNAME"
+        - - "CUSTOMER_LASTNAME"
+          - "CUSTOMER_LASTNAME"
+        - - "CUSTOMER_ADDRESS"
+          - "CUSTOMER_ADDRESS"
+        - - "CUSTOMER_CITY"
+          - "CUSTOMER_CITY"
+        - - "CUSTOMER_STATE"
+          - "CUSTOMER_STATE"
+        - - "CUSTOMER_ZIPCODE"
+          - "CUSTOMER_ZIPCODE"
+        - - "CUSTOMER_COUNTRY"
+          - "CUSTOMER_COUNTRY"
+        - - "CUSTOMER_PHONE"
+          - "CUSTOMER_PHONE"
+        - - "CUSTOMER_GENDER"
+          - "CUSTOMER_GENDER"
+        - - "CUSTOMER_INCOME"
+          - "CUSTOMER_INCOME"
+        - - "CUSTOMER_EMAIL"
+          - "CUSTOMER_EMAIL"
+        - - "CUSTOMER_AGE"
+          - "CUSTOMER_AGE"
+        - - "LAST_UPDATED"
+          - "LAST_UPDATED"
+        filterConditions:
+        - - "CUSTOMER_ID"
+          - "Not"
+          - "Null"
+          - "NULL"
+        - - "CUSTOMER_ZIPCODE"
+          - "Not"
+          - "Null"
+          - "NULL"
+        combineConditions: "AND"
+      postProcessing:
+        updateScalarVariables:
+        - - "env_cust_rec_count"
+          - "${sysvar.thisComponent.rowCount}"
+    If 0:
+      type: "if"
+      transitions:
+        "true":
+        - "dm_customer_load 0"
+      skipped: false
+      parameters:
+        componentName: "If 0"
+        mode: "Simple"
+        condition:
+        - - "env_cust_rec_count"
+          - "Is"
+          - "Less than or equal to"
+          - "5000"
+        combineConditions: "And"
+    dm_customer_load 0:
+      type: "run-transformation"
+      transitions:
+        success:
+        - "Python Script 0"
+        failure:
+        - "End Failure 0"
+      skipped: false
+      parameters:
+        componentName: "dm_customer_load 0"
+        transformationJob: "Samples/sample_dm_customer_load_transform"
+        setScalarVariables:
+        setGridVariables:
+        - variable: "grid_cust_values"
+          status: "grid"
+          gridValues:
+            fromGrid:
+              variable: "grid_input_cust"
+              columns:
+              - "DEALERSHIP_ID"
+              - "CUSTOMER_REGION"
+              - "CUSTOMER_ID"
+              - "CUSTOMER_FIRSTNAME"
+              - "CUSTOMER_LASTNAME"
+              - "CUSTOMER_ADDRESS"
+              - "CUSTOMER_CITY"
+              - "CUSTOMER_STATE"
+              - "CUSTOMER_ZIPCODE"
+              - "CUSTOMER_COUNTRY"
+              - "CUSTOMER_PHONE"
+              - "CUSTOMER_GENDER"
+              - "CUSTOMER_INCOME"
+              - "CUSTOMER_EMAIL"
+              - "CUSTOMER_AGE"
+              - "LAST_UPDATED"
+      postProcessing:
+        updateScalarVariables:
+        - - "env_cloud_stat"
+          - "${sysvar.thisComponent.mainTaskDurationMs}"
+        - - "job_main_error"
+          - "${sysvar.childPipeline.vars.job_error_dmcust}"
+    Python Script 0:
+      type: "python-script"
+      skipped: false
+      parameters:
+        componentName: "Python Script 0"
+        script: "env_subpath###\n# Variables are directly accessible: \n#   print\
+          \ (myvar)\n# Updating a variable:\n#   context.updateVariable('myvar', 'new-value')\n\
+          # Grid Variables are accessible via the context:\n#   print (context.getGridVariable('mygridvar'))\n\
+          # Updating a grid variable:\n#   context.updateGridVariable('mygridvar',\
+          \ [['list','of'],['lists','!']])\n# A database cursor can be accessed from\
+          \ the context (Jython only):\n#   cursor = context.cursor()\n#   cursor.execute('select\
+          \ count(*) from mytable')\n#   rowcount = cursor.fetchone()[0]\n###\n# context.updateVariable('env_state','${detailed_error}')\n\
+          # print (detailed_error)\nprint ('Total Records: ', str(env_cloud_rec))\n\
+          print ('Total Duration: ', str(env_cloud_stat))\nprint ('The Component:\
+          \ ', str(env_state))\nprint ('Error Message: ', str(job_main_error))"
+        interpreter: "Python 3"
+        timeout: "360"
+    End Failure 0:
+      type: "end-failure"
+      skipped: false
+      parameters:
+        componentName: "End Failure 0"
+  variables:
+    job_main_error:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "SHARED"
+        visibility: "PUBLIC"
+      defaultValue: ""
+    grid_input_cust:
+      metadata:
+        type: "GRID"
+        description: ""
+        scope: "COPIED"
+        visibility: "PUBLIC"
+        columns:
+          DEALERSHIP_ID:
+            columnType: "NUMBER"
+          CUSTOMER_REGION:
+            columnType: "TEXT"
+          CUSTOMER_ID:
+            columnType: "NUMBER"
+          CUSTOMER_FIRSTNAME:
+            columnType: "TEXT"
+          CUSTOMER_LASTNAME:
+            columnType: "TEXT"
+          CUSTOMER_ADDRESS:
+            columnType: "TEXT"
+          CUSTOMER_CITY:
+            columnType: "TEXT"
+          CUSTOMER_STATE:
+            columnType: "TEXT"
+          CUSTOMER_ZIPCODE:
+            columnType: "NUMBER"
+          CUSTOMER_COUNTRY:
+            columnType: "TEXT"
+          CUSTOMER_PHONE:
+            columnType: "TEXT"
+          CUSTOMER_GENDER:
+            columnType: "TEXT"
+          CUSTOMER_INCOME:
+            columnType: "NUMBER"
+          CUSTOMER_EMAIL:
+            columnType: "TEXT"
+          CUSTOMER_AGE:
+            columnType: "NUMBER"
+          LAST_UPDATED:
+            columnType: "TEXT"
+      defaultValue:
+      - - "0"
+        - ""
+        - "0"
+        - ""
+        - ""
+        - ""
+        - ""
+        - ""
+        - "0"
+        - ""
+        - ""
+        - ""
+        - "0"
+        - ""
+        - "0"
+        - "2023-04-21"
+design:
+  components:
+    Start 0:
+      position:
+        x: -736
+        "y": -176
+      tempMetlId: 2390
+    Query Result To Grid 0:
+      position:
+        x: -608
+        "y": -176
+      tempMetlId: 2445
+    If 0:
+      position:
+        x: -480
+        "y": -173
+      tempMetlId: 4609
+    dm_customer_load 0:
+      position:
+        x: -320
+        "y": -176
+      tempMetlId: 5714
+    Python Script 0:
+      position:
+        x: -211
+        "y": -114
+      tempMetlId: 11186
+    End Failure 0:
+      position:
+        x: -213
+        "y": -232
+      tempMetlId: 11466

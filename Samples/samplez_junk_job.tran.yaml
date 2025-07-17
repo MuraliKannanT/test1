@@ -1,0 +1,123 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    dm_cust_check 0:
+      type: "table-input"
+      parameters:
+        componentName: "dm_cust_check 0"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "dm_cust_check"
+        columnNames:
+        - "DEALERSHIP_ID"
+        - "CUSTOMER_REGION"
+        - "CUSTOMER_ID"
+        - "CUSTOMER_FIRSTNAME"
+        - "CUSTOMER_LASTNAME"
+        - "CUSTOMER_ADDRESS"
+        - "CUSTOMER_CITY"
+        - "CUSTOMER_STATE"
+        - "CUSTOMER_ZIPCODE"
+        - "CUSTOMER_COUNTRY"
+        - "CUSTOMER_PHONE"
+        - "CUSTOMER_GENDER"
+        - "CUSTOMER_INCOME"
+        - "CUSTOMER_EMAIL"
+        - "CUSTOMER_AGE"
+        - "LAST_UPDATED"
+        - "CUST_NAME"
+        - "CUST_GENDER"
+        - "CUST_PHONE"
+        - "Age_Group"
+        timeOffset: ""
+    Rewrite Table 0:
+      type: "rewrite-table"
+      parameters:
+        componentName: "Rewrite Table 0"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "dm_cust_check"
+        orderBy:
+    dm_cust_check:
+      type: "table-output"
+      parameters:
+        componentName: "dm_cust_check"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "dm_cust_check"
+        fixDataTypeMismatches: "Yes"
+        columnMapping:
+        - - "DEALERSHIP_ID"
+          - "DEALERSHIP_ID"
+        - - "CUSTOMER_REGION"
+          - "CUSTOMER_REGION"
+        - - "CUSTOMER_ID"
+          - "CUSTOMER_ID"
+        - - "CUSTOMER_FIRSTNAME"
+          - "CUSTOMER_FIRSTNAME"
+        - - "CUSTOMER_LASTNAME"
+          - "CUSTOMER_LASTNAME"
+        - - "CUSTOMER_ADDRESS"
+          - "CUSTOMER_ADDRESS"
+        - - "CUSTOMER_CITY"
+          - "CUSTOMER_CITY"
+        - - "CUSTOMER_STATE"
+          - "CUSTOMER_STATE"
+        - - "CUSTOMER_ZIPCODE"
+          - "CUSTOMER_ZIPCODE"
+        - - "CUSTOMER_COUNTRY"
+          - "CUSTOMER_COUNTRY"
+        - - "CUSTOMER_PHONE"
+          - "CUSTOMER_PHONE"
+        - - "CUSTOMER_GENDER"
+          - "CUSTOMER_GENDER"
+        - - "CUSTOMER_INCOME"
+          - "CUSTOMER_INCOME"
+        - - "CUSTOMER_EMAIL"
+          - "CUSTOMER_EMAIL"
+        - - "CUSTOMER_AGE"
+          - "CUSTOMER_AGE"
+        - - "LAST_UPDATED"
+          - "LAST_UPDATED"
+        - - "CUST_NAME"
+          - "CUST_NAME"
+        - - "CUST_GENDER"
+          - "CUST_GENDER"
+        - - "CUST_PHONE"
+          - "CUST_PHONE"
+        - - "Age_Group"
+          - "Age_Group"
+        orderBy:
+        outputMode: "Append"
+design:
+  components:
+    dm_cust_check 0:
+      position:
+        x: -448
+        "y": -144
+      tempMetlId: 2737
+    Rewrite Table 0:
+      position:
+        x: -352
+        "y": -144
+      tempMetlId: 2738
+    dm_cust_check:
+      position:
+        x: -240
+        "y": -144
+      tempMetlId: 2739
+  notes:
+    "2745":
+      position:
+        x: -536
+        "y": -207
+      size:
+        height: 112
+        width: 401
+      theme: "yellow"
+      content: |-
+        Components from dm_customer_load;
+        For testing purpose

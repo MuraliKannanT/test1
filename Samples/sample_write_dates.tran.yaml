@@ -1,0 +1,127 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    SRC_DATES:
+      type: "table-input"
+      parameters:
+        componentName: "SRC_DATES"
+        database: "[Environment Default]"
+        schema: "SOURCE"
+        targetTable: "SRC_DATES"
+        columnNames:
+        - "Date_ID"
+        - "Date_Value"
+        timeOffset: ""
+    STG_DATES_2:
+      type: "table-output"
+      sources:
+      - "Map Values 0"
+      parameters:
+        componentName: "STG_DATES_2"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "STG_DATES_2"
+        fixDataTypeMismatches: "No"
+        columnMapping:
+        - - "Date_ID"
+          - "DATE_ID"
+        - - "Date_Value"
+          - "DATE_VALUE"
+        - - "Month_Name"
+          - "MONTH_NAME"
+        orderBy:
+        outputMode: "Append"
+    Map Values 0:
+      type: "map-values"
+      sources:
+      - "Calculator 0"
+      parameters:
+        componentName: "Map Values 0"
+        valueMap:
+        - - "Month_No"
+          - "Is"
+          - "Equal to"
+          - "1"
+          - "January"
+        - - "Month_No"
+          - "Is"
+          - "Equal to"
+          - "2"
+          - "February"
+        columnName: "Month_Name"
+        other: "null"
+    Calculator 0:
+      type: "calculator"
+      sources:
+      - "SRC_DATES"
+      parameters:
+        componentName: "Calculator 0"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "MONTH(\"Date_Value\")"
+          - "Month_No"
+        - - "IFF(mod(\"Date_ID\",4)=0, 'Four','Seven')"
+          - "Age_Group"
+    SQL 0:
+      type: "sql"
+      parameters:
+        componentName: "SQL 0"
+        query: "select $1 d_id,$2 mg_id,$3 d_nm from @s3_deal (file_format => ff_csv_dq)"
+    Create View 0:
+      type: "create-view"
+      sources:
+      - "SQL 0"
+      parameters:
+        componentName: "Create View 0"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        viewName: "v_dealers"
+        secureView: "No"
+        viewType: "Standard"
+  variables:
+    month_names_2:
+      metadata:
+        type: "GRID"
+        description: ""
+        scope: "COPIED"
+        visibility: "PUBLIC"
+        columns:
+          month_no:
+            columnType: "NUMBER"
+          month_name:
+            columnType: "TEXT"
+      defaultValue: []
+design:
+  components:
+    SRC_DATES:
+      position:
+        x: 149
+        "y": 108
+      tempMetlId: 690
+    STG_DATES_2:
+      position:
+        x: 688
+        "y": 80
+      tempMetlId: 830
+    Map Values 0:
+      position:
+        x: 480
+        "y": 112
+      tempMetlId: 950
+    Calculator 0:
+      position:
+        x: 281
+        "y": 105
+      tempMetlId: 977
+    SQL 0:
+      position:
+        x: 144
+        "y": 192
+      tempMetlId: 1203
+    Create View 0:
+      position:
+        x: 272
+        "y": 192
+      tempMetlId: 1223

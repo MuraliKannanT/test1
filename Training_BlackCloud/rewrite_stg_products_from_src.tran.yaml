@@ -1,0 +1,131 @@
+type: "transformation"
+version: "1.0"
+pipeline:
+  components:
+    Rewrite Table 0:
+      type: "rewrite-table"
+      sources:
+      - "Join 0"
+      parameters:
+        componentName: "Rewrite Table 0"
+        warehouse: "[Environment Default]"
+        database: "MKMOTORS"
+        schema: "STG"
+        targetTable: "STG_PRODUCTS_01"
+        orderBy:
+    SRC_PRODUCTS:
+      type: "table-input"
+      parameters:
+        componentName: "SRC_PRODUCTS"
+        database: "[Environment Default]"
+        schema: "SOURCE"
+        targetTable: "SRC_PRODUCTS"
+        columnNames:
+        - "PRODUCT_ID"
+        - "GROUP_ID"
+        - "PRODUCT_DESC"
+        timeOffset: ""
+    SRC_PRODUCT_COST:
+      type: "table-input"
+      parameters:
+        componentName: "SRC_PRODUCT_COST"
+        database: "[Environment Default]"
+        schema: "SOURCE"
+        targetTable: "SRC_PRODUCT_COST"
+        columnNames:
+        - "PRODUCT_CODE"
+        - "COST"
+        timeOffset: ""
+    Join 0:
+      type: "join"
+      sources:
+      - "SRC_PRODUCTS"
+      - "SRC_PRODUCT_COST"
+      parameters:
+        componentName: "Join 0"
+        mainTable: "SRC_PRODUCTS"
+        mainTableAlias: "main"
+        joins:
+        - - "SRC_PRODUCT_COST"
+          - "second"
+          - "Inner"
+        joinExpressions:
+        - - "\"main\".\"PRODUCT_ID\"=\"second\".\"PRODUCT_CODE\""
+          - "main_Inner_second"
+        columnMappings:
+        - - "main.PRODUCT_ID"
+          - "PRODUCT_ID"
+        - - "main.GROUP_ID"
+          - "GROUP_ID"
+        - - "main.PRODUCT_DESC"
+          - "PRODUCT_DESC"
+        - - "second.PRODUCT_CODE"
+          - "PRODUCT_CODE"
+        - - "second.COST"
+          - "COST"
+    STG_PRODUCTS:
+      type: "table-output"
+      sources:
+      - "Calculator 0"
+      parameters:
+        componentName: "STG_PRODUCTS"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "STG_PRODUCTS"
+        fixDataTypeMismatches: "No"
+        columnMapping:
+        - - "PRODUCT_ID"
+          - "PRODUCT_ID"
+        - - "GROUP_ID"
+          - "GROUP_ID"
+        - - "PRODUCT_DESC"
+          - "PRODUCT"
+        - - "COST"
+          - "PRODCOST"
+        - - "CTD"
+          - "UPDATE_TS"
+        orderBy:
+        outputMode: "Append"
+    Calculator 0:
+      type: "calculator"
+      sources:
+      - "Join 0"
+      parameters:
+        componentName: "Calculator 0"
+        includeInputColumns: "Yes"
+        calculations:
+        - - "current_timestamp()"
+          - "CTD"
+design:
+  components:
+    Rewrite Table 0:
+      position:
+        x: 528
+        "y": 64
+      tempMetlId: 346
+    SRC_PRODUCTS:
+      position:
+        x: 151
+        "y": 84
+      tempMetlId: 347
+    SRC_PRODUCT_COST:
+      position:
+        x: 144
+        "y": 176
+      tempMetlId: 348
+    Join 0:
+      position:
+        x: 272
+        "y": 112
+      tempMetlId: 349
+    STG_PRODUCTS:
+      position:
+        x: 512
+        "y": 160
+      tempMetlId: 350
+    Calculator 0:
+      position:
+        x: 386
+        "y": 165
+      tempMetlId: 384

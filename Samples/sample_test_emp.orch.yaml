@@ -1,0 +1,82 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "S3 Load 0"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    S3 Load 0:
+      type: "s3-load"
+      transitions:
+        success:
+        - "Webhook Post 0"
+      skipped: false
+      parameters:
+        componentName: "S3 Load 0"
+        stage: "[Custom]"
+        authentication: "Credentials"
+        s3ObjectPrefix: "s3://mkmotors/Employees/"
+        pattern: ".*employees.*[1].*[.]json.*"
+        encryption: "None"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "SOURCE"
+        targetTable: "JEMP"
+        loadColumns:
+        - "VC"
+        format: "[Custom]"
+        fileType: "JSON"
+        compression: "AUTO"
+        enableOctal: "False"
+        allowDuplicates: "False"
+        stripOuterArray: "False"
+        stripNullValues: "False"
+        ignoreUtf8Errors: "False"
+        nullIf1:
+        trimSpace1: "False"
+        onError: "Abort Statement"
+        sizeLimitB: ""
+        purgeFiles: "False"
+        matchByColumnName: "None"
+        truncateColumns: "False"
+        forceLoad: "False"
+    Webhook Post 0:
+      type: "webhook-post"
+      skipped: false
+      parameters:
+        componentName: "Webhook Post 0"
+        incomingWebhookUrl: "https://hooks.slack.com/services/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"
+        payloadTemplate: "job_complete.json"
+        payloadVariables:
+        - - "duration"
+          - "duration"
+        - - "completed_at"
+          - "completed_at"
+        - - "component"
+          - "component"
+        - - "started_at"
+          - "started_at"
+        - - "status"
+          - "status"
+design:
+  components:
+    Start 0:
+      position:
+        x: -352
+        "y": -32
+      tempMetlId: 6184
+    S3 Load 0:
+      position:
+        x: -228
+        "y": -28
+      tempMetlId: 6195
+    Webhook Post 0:
+      position:
+        x: -145
+        "y": 23
+      tempMetlId: 13053

@@ -1,0 +1,456 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    start_Iterators:
+      type: "start"
+      transitions:
+        unconditional:
+        - "fil_itr_cust_files"
+        - "API Query 0"
+      skipped: false
+      parameters:
+        componentName: "start_Iterators"
+    s3_load_stg_cust:
+      type: "s3-load"
+      skipped: false
+      parameters:
+        componentName: "s3_load_stg_cust"
+        stage: "[Custom]"
+        authentication: "Credentials"
+        s3ObjectPrefix: "s3://mkmotors/Customers/"
+        pattern: "${env_region_names}_region_customers.dat"
+        encryption: "None"
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "STG_CUSTOMERS"
+        loadColumns:
+        - "DEALERSHIP_ID"
+        - "CUSTOMER_REGION"
+        - "CUSTOMER_ID"
+        - "CUSTOMER_FIRSTNAME"
+        - "CUSTOMER_LASTNAME"
+        - "CUSTOMER_ADDRESS"
+        - "CUSTOMER_CITY"
+        - "CUSTOMER_STATE"
+        - "CUSTOMER_ZIPCODE"
+        - "CUSTOMER_COUNTRY"
+        - "CUSTOMER_PHONE"
+        - "CUSTOMER_GENDER"
+        - "CUSTOMER_INCOME"
+        - "CUSTOMER_EMAIL"
+        - "CUSTOMER_AGE"
+        - "LAST_UPDATED"
+        format: "[Custom]"
+        fileType: "CSV"
+        compression: "AUTO"
+        recordDelimiter: ""
+        fieldDelimiter: ""
+        skipHeader: "1"
+        skipBlankLines: "False"
+        dateFormat: ""
+        timeFormat: ""
+        timestampFormat: ""
+        escape: ""
+        escapeUnenclosedField: ""
+        trimSpace: "False"
+        fieldOptionallyEnclosed: "\""
+        nullIf:
+        errorOnColumnCountMismatch: "False"
+        emptyFieldAsNull: "True"
+        replaceInvalidCharacters: "False"
+        encodingType: ""
+        onError: "Abort Statement"
+        sizeLimitB: ""
+        purgeFiles: "False"
+        truncateColumns: "False"
+        forceLoad: "False"
+    fix_itr_cust_region:
+      type: "fixed-iterator"
+      transitions:
+        success:
+        - "tbl_itr_cust_summary"
+      iterationTarget: "s3_load_stg_cust"
+      skipped: false
+      parameters:
+        componentName: "fix_itr_cust_region"
+        concurrency: "Sequential"
+        variablesToIterate:
+        - "env_region_names"
+        iterationValues:
+        - - "east"
+        - - "central"
+        - - "west"
+        breakOnFailure: "No"
+    tbl_itr_cust_summary:
+      type: "table-iterator"
+      transitions:
+        success:
+        - "Loop Iterator 0"
+      iterationTarget: "email_state_mgrs"
+      skipped: false
+      parameters:
+        componentName: "tbl_itr_cust_summary"
+        mode: "Advanced"
+        query: "select \n\"CUSTOMER_STATE\" as STATE,\ncount(\"CUSTOMER_ID\") as TOTCUST,\n\
+          avg(\"CUSTOMER_INCOME\") as AVGINCOME\nfrom STG_CUSTOMERS\ngroup by 1\n"
+        concurrency: "Sequential"
+        columnMapping1:
+        - - "STATE"
+          - "env_state"
+        - - "TOTCUST"
+          - "env_totcuststg"
+        - - "AVGINCOME"
+          - "env_avginc"
+        breakOnFailure: "No"
+    email_state_mgrs:
+      type: "send-email-v2"
+      skipped: false
+      parameters:
+        componentName: "email_state_mgrs"
+        toRecipients:
+        - - "muralikannan25@gmail.com"
+        ccRecipients:
+        subject: "Matillion Email Test for ${env_state}"
+        message: "This is a test message created from Matillion ETL tool.\nFind below\
+          \ the data for your state:\nTotal Customers: ${env_totcust}\nAverage Income:\
+          \ ${env_avginc} \nCurrent Date: ${current_date}\nExpiry Date: ${end_date}"
+        senderAddress: "muralikkannant@blackcloud.in"
+        replyAddress: "muralikkannant@blackcloud.in"
+        smtpUsername: "muralikkannant@blackcloud.in"
+        smtpPassword: "Kannan$1969"
+        smtpHostname: "mail.blackcloud.in"
+        smtpPort: "465"
+        enableSslTls: "Yes"
+        enableStartTls: "No"
+    trans_s3_s3_cust:
+      type: "data-transfer-object"
+      skipped: false
+      parameters:
+        componentName: "trans_s3_s3_cust"
+        sourceType: "S3"
+        sourceUrl5: "s3://mkmotors/${env_srcpath}${env_subpath}${env_filname}"
+        unpackZipFile: "No"
+        targetType: "S3"
+        gzipData: "No"
+        targetObjectName: "${filname}"
+        targetUrl2: "s3://mkmotors/Customers/"
+        accessControlListOptions: "Private"
+        encryption: "None"
+    fil_itr_cust_files:
+      type: "file-iterator"
+      transitions:
+        success:
+        - "fix_itr_cust_region"
+      iterationTarget: "trans_s3_s3_cust"
+      skipped: false
+      parameters:
+        componentName: "fil_itr_cust_files"
+        inputDataType: "S3"
+        inputDataUrl1: "s3://mkmotors/Customers/"
+        inputDataUrl3: "Yes"
+        maxIterations: "25"
+        filterRegex: ".*customers[.]dat.*"
+        concurrency: "Concurrent"
+        variables:
+        - - "env_filname"
+          - "Filename"
+        - - "env_srcpath"
+          - "Base Folder"
+        - - "env_subpath"
+          - "Subfolder"
+    Copy of Grid Iterator 0:
+      type: "grid-iterator"
+      transitions:
+        success:
+        - "Salesforce Query 0"
+      iterationTarget: "py_cur_date"
+      skipped: false
+      parameters:
+        componentName: "Copy of Grid Iterator 0"
+        gridVariable: "date_list"
+        gridIteratorVariableMapping:
+        - - "date_value"
+          - "current_date"
+        - - "date_end"
+          - "end_date"
+        breakOnFailure: "No"
+        concurrency: "Sequential"
+    py_cur_date:
+      type: "python-script"
+      skipped: false
+      parameters:
+        componentName: "py_cur_date"
+        script: "###\n# Variables are directly accessible: \n#   print myvar\n# Updating\
+          \ a variable:\n#   context.updateVariable('myvar', 'new-value')\n# Grid\
+          \ Variables are accessible via the context:\n#   print context.getGridVariable('mygridvar')\n\
+          # Udating a grid variable:\n#   context.updateGridVariable('mygridvar',\
+          \ [['list','of'],['lists','!']])\n# A database cursor can be accessed from\
+          \ the context (Jython only):\n#   cursor = context.cursor()\n#   cursor.execute('select\
+          \ count(*) from mytable')\n#   rowcount = cursor.fetchone()[0]\n###\nprint\
+          \ current_date\nprint env_curdate"
+        interpreter: "Python 3"
+    Loop Iterator 0:
+      type: "loop-iterator"
+      transitions:
+        success:
+        - "Copy of Grid Iterator 0"
+      iterationTarget: "create_temp_tables"
+      skipped: false
+      parameters:
+        componentName: "Loop Iterator 0"
+        concurrency: "Sequential"
+        variableToIterate: "env_st_date"
+        startingValue: "1"
+        incrementValue: "1"
+        endValue: "5"
+        breakOnFailure: "No"
+    create_temp_tables:
+      type: "create-table-v2"
+      skipped: false
+      parameters:
+        componentName: "create_temp_tables"
+        createMethod: "Create"
+        database: "[Environment Default]"
+        schema: "SOURCE"
+        table: "t_${env_curdate.now()}"
+        snowflakeTableType: "Transient"
+        columns:
+        - - "varcol"
+          - "VARIANT"
+          - ""
+          - ""
+          - ""
+          - "No"
+          - "No"
+          - ""
+        defaultDdlCollation: ""
+        primaryKeys:
+        clusteringKeys:
+        dataRetentionTimeInDays: ""
+        comment: ""
+    Salesforce Query 0:
+      type: "salesforce-query"
+      skipped: false
+      parameters:
+        componentName: "Salesforce Query 0"
+        basicAdvancedMode: "Advanced"
+        authenticationMethod: "User/Password"
+        useSandbox: "No"
+        username: "mkthin@blackcloud.in"
+        password: ""
+        securityToken: ""
+        connectionOptions:
+        sqlQuery: |-
+          select Name,BillingCity,industry,AnnualRevenue from Account
+          where AnnualRevenue is not null;
+        type: "Standard"
+        primaryKeys:
+        warehouse: "[Environment Default]"
+        database: "[Environment Default]"
+        schema: "[Environment Default]"
+        targetTable: "STG_ACCOUNTS"
+        stage: "[Custom]"
+        stagePlatform: "Existing Amazon S3 Location"
+        stageAuthentication: "Credentials"
+        s3StagingArea: "mkmotors"
+        useAcceleratedEndpoint: "False"
+        encryption: "None"
+        loadOptions:
+        - "On"
+        - "Off"
+        - "On"
+        - ""
+        - "On"
+        - "Gzip"
+        autoDebug: "Off"
+    API Query 0:
+      type: "unknown-orchestration"
+      skipped: false
+      parameters:
+        "1": "API Query 0"
+        "2": "Basic"
+        "6": "api-airport"
+        "7":
+        - "airport"
+        - "city"
+        - "country"
+        - "iata"
+        - "is_active"
+        - "lat"
+        - "long"
+        - "num_carriers"
+        - "state"
+        "8":
+        "9": "And"
+        "10": "SELECT ..."
+        "11": "100"
+        "12":
+          "1":
+          - - "Other"
+            - " csvfilename=training_s3_airports"
+        "13": "[Environment Default]"
+        "14": "[Environment Default]"
+        "15": "STG_AIRPORTS"
+        "16": "[Environment Default]"
+        "17": "mkmotors"
+        "18":
+        "20": ""
+        "100": "AirportAPI"
+        "499": "User/Password"
+        "500": "apiuser"
+        "501": ""
+        "502": ""
+        "503": ""
+        "504": ""
+        "505": ""
+        "506": "Request Header"
+        "1001":
+        "1013": "Off"
+        "1014": "3"
+        "1992": "[Environment Default]"
+        "1993": "False"
+        "1994": ""
+        "1995": "[Environment Default]"
+        "1996": "[Environment Default]"
+        "1997": ""
+        "1998": "[Environment Default]"
+        "1999": "[Environment Default]"
+        "2000": "Standard"
+        "40000": "None"
+        "40001": ""
+        "40501":
+        "40502":
+        - "On"
+        - "Off"
+        - "On"
+        - "On"
+        - "Gzip"
+        "63319": "Credentials"
+        "63320": ""
+        "63321": ""
+        "63322": ""
+        "84533": ""
+        "88340":
+        "88341": "Existing Amazon S3 Location"
+        "88342": "Credentials"
+        "88343": ""
+        "88344": "False"
+        "88345": "[Custom]"
+        "98776": ""
+  variables:
+    end_date:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "COPIED"
+        visibility: "PUBLIC"
+      defaultValue: "2023-04-15"
+    start_date:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "COPIED"
+        visibility: "PUBLIC"
+      defaultValue: "2023-03-16"
+    current_date:
+      metadata:
+        type: "TEXT"
+        description: ""
+        scope: "COPIED"
+        visibility: "PUBLIC"
+      defaultValue: "2023-03-16"
+    grid_v:
+      metadata:
+        type: "GRID"
+        description: ""
+        scope: "COPIED"
+        visibility: "PUBLIC"
+        columns:
+          col1:
+            columnType: "TEXT"
+      defaultValue:
+      - - "abc@gmail.com"
+      - - "def@gmail.com"
+    date_list:
+      metadata:
+        type: "GRID"
+        description: ""
+        scope: "COPIED"
+        visibility: "PUBLIC"
+        columns:
+          date_value:
+            columnType: "TEXT"
+          date_end:
+            columnType: "TEXT"
+      defaultValue:
+      - - "alskdjs"
+        - "2023-08-09"
+design:
+  components:
+    start_Iterators:
+      position:
+        x: -480
+        "y": -80
+      tempMetlId: 353
+    s3_load_stg_cust:
+      position:
+        x: -176
+        "y": -48
+      tempMetlId: 354
+    fix_itr_cust_region:
+      position:
+        x: -176
+        "y": -80
+      tempMetlId: 355
+    tbl_itr_cust_summary:
+      position:
+        x: -16
+        "y": -80
+      tempMetlId: 356
+    email_state_mgrs:
+      position:
+        x: -16
+        "y": -48
+      tempMetlId: 357
+    trans_s3_s3_cust:
+      position:
+        x: -336
+        "y": -48
+      tempMetlId: 358
+    fil_itr_cust_files:
+      position:
+        x: -336
+        "y": -80
+      tempMetlId: 359
+    Copy of Grid Iterator 0:
+      position:
+        x: 288
+        "y": -80
+      tempMetlId: 360
+    py_cur_date:
+      position:
+        x: 288
+        "y": -48
+      tempMetlId: 361
+    Loop Iterator 0:
+      position:
+        x: 144
+        "y": -80
+      tempMetlId: 362
+    create_temp_tables:
+      position:
+        x: 144
+        "y": -48
+      tempMetlId: 363
+    Salesforce Query 0:
+      position:
+        x: 368
+        "y": 0
+      tempMetlId: 11760
+    API Query 0:
+      position:
+        x: -480
+        "y": 32
+      tempMetlId: 11950

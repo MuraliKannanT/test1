@@ -1,0 +1,77 @@
+type: "orchestration"
+version: "1.0"
+pipeline:
+  components:
+    Start 0:
+      type: "start"
+      transitions:
+        unconditional:
+        - "Python Script 0"
+      skipped: false
+      parameters:
+        componentName: "Start 0"
+    If 0:
+      type: "if"
+      transitions:
+        "true":
+        - "test_SubJob_Products_SCD_01"
+      skipped: false
+      parameters:
+        componentName: "If 0"
+        mode: "Simple"
+        condition:
+        - - "env_prod_str_status"
+          - "Is"
+          - "Equal to"
+          - "Yes"
+        combineConditions: "Or"
+    Python Script 0:
+      type: "python-script"
+      transitions:
+        success:
+        - "If 0"
+      skipped: false
+      parameters:
+        componentName: "Python Script 0"
+        script: "###\n# Variables are directly accessible: \n#   print (myvar)\n#\
+          \ Updating a variable:\n#   context.updateVariable('myvar', 'new-value')\n\
+          # Grid Variables are accessible via the context:\n#   print (context.getGridVariable('mygridvar'))\n\
+          # Updating a grid variable:\n#   context.updateGridVariable('mygridvar',\
+          \ [['list','of'],['lists','!']])\n# A database cursor can be accessed from\
+          \ the context (Jython only):\n#   cursor = context.cursor()\n#   cursor.execute('select\
+          \ count(*) from mytable')\n#   rowcount = cursor.fetchone()[0]\n###\ncurs\
+          \ = context.cursor()\ncurs.execute(\"select system$stream_has_data('mkmotors.stg.str_products')\"\
+          )\nstrstatus = curs.fetchone()[0]\nif strstatus==True:\n\tcontext.updateVariable('env_prod_str_status',\
+          \ 'Yes')\nelse:\n\tcontext.updateVariable('env_prod_str_status', 'No')\n\
+          print env_prod_str_status\n\n"
+        interpreter: "Python 3"
+    test_SubJob_Products_SCD_01:
+      type: "run-orchestration"
+      skipped: false
+      parameters:
+        componentName: "test_SubJob_Products_SCD_01"
+        orchestrationJob: "Samples/test_SubJob_Products_SCD_01"
+        setScalarVariables:
+        setGridVariables:
+design:
+  components:
+    Start 0:
+      position:
+        x: -256
+        "y": -32
+      tempMetlId: 13504
+    If 0:
+      position:
+        x: 48
+        "y": -32
+      tempMetlId: 13521
+    Python Script 0:
+      position:
+        x: -128
+        "y": -32
+      tempMetlId: 13532
+    test_SubJob_Products_SCD_01:
+      position:
+        x: 162
+        "y": -36
+      tempMetlId: 13601
